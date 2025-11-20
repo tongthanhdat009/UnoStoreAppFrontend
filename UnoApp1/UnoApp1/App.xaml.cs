@@ -1,4 +1,6 @@
 using Uno.Resizetizer;
+using Refit;
+using UnoApp1.Services.Endpoints;
 
 namespace UnoApp1;
 
@@ -66,11 +68,47 @@ public partial class App : Application
                     // DelegatingHandler will be automatically injected
                     services.AddTransient<DelegatingHandler, DebugHttpHandler>();
 #endif
+                    // API HttpClient setup
+                    var baseUrl = new Uri("http://localhost:7000");
+
+                    // Handler to attach JWT token when available
+                    services.AddTransient<AuthorizationHandler>();
+
+                    services
+                        .AddHttpClient("Api", client =>
+                        {
+                            client.BaseAddress = baseUrl;
+                            client.DefaultRequestHeaders.Accept.Clear();
+                            client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+                        })
+#if DEBUG
+                        .AddHttpMessageHandler<DebugHttpHandler>()
+#endif
+                        .AddHttpMessageHandler<AuthorizationHandler>();
                 })
                 .ConfigureServices((context, services) =>
                 {
                     // TODO: Register your services
                     //services.AddSingleton<IMyService, MyService>();
+                    services.AddSingleton<ITokenProvider, JwtTokenProvider>();
+                    
+                    // Register Refit API service
+                    services.AddRefitClient<IRetailApiService>()
+                        .ConfigureHttpClient(c =>
+                        {
+#if __ANDROID__
+                            // Use 10.0.2.2 for Android emulator to reach localhost
+                            c.BaseAddress = new Uri("http://10.0.2.2:7000");
+#else
+                            c.BaseAddress = new Uri("http://localhost:7000");
+#endif
+                            c.DefaultRequestHeaders.Accept.Clear();
+                            c.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+                        })
+#if DEBUG
+                        .AddHttpMessageHandler<DebugHttpHandler>()
+#endif
+                        .AddHttpMessageHandler<AuthorizationHandler>();
                 })
                 .UseNavigation(RegisterRoutes)
             );
@@ -89,6 +127,7 @@ public partial class App : Application
         views.Register(
             new ViewMap(ViewModel: typeof(ShellViewModel)),
             new ViewMap<MainPage, MainViewModel>(),
+            new ViewMap<ProductListPage, ProductListViewModel>(),
             new DataViewMap<SecondPage, SecondViewModel, Entity>()
         );
 
@@ -96,8 +135,9 @@ public partial class App : Application
             new RouteMap("", View: views.FindByViewModel<ShellViewModel>(),
                 Nested:
                 [
-                    new("Main", View: views.FindByViewModel<MainViewModel>(), IsDefault: true),
+                    new("Main", View: views.FindByViewModel<MainViewModel>()),
                     new("Second", View: views.FindByViewModel<SecondViewModel>()),
+                    new("ProductList", View: views.FindByViewModel<ProductListViewModel>(), IsDefault: true),
                 ]
             )
         );

@@ -5,22 +5,13 @@
         <OutputType>Exe</OutputType>
         <UnoSingleProject>true</UnoSingleProject>
 
-        <!-- Display name -->
         <ApplicationTitle>UnoApp1</ApplicationTitle>
-        <!-- App Identifier -->
         <ApplicationId>com.companyname.UnoApp1</ApplicationId>
-        <!-- Versions -->
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
         <ApplicationVersion>1</ApplicationVersion>
-        <!-- Package Publisher -->
         <ApplicationPublisher>O=UnoApp1</ApplicationPublisher>
-        <!-- Package Description -->
         <Description>UnoApp1 powered by Uno Platform.</Description>
 
-        <!--
-          UnoFeatures are used to quickly add and manage features enabled for your app.
-          https://aka.platform.uno/singleproject-features
-        -->
         <UnoFeatures>
             Material;
             Dsp;
@@ -37,8 +28,32 @@
             SkiaRenderer;
         </UnoFeatures>
     </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)'=='Release' and $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+        <!-- AOT disabled due to incompatibility with Azure.Core, Anthropic.SDK, and Microsoft.Extensions.AI libraries -->
+        <RunAOTCompilation>false</RunAOTCompilation>
+        <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+
+        <!-- If you need to enable AOT in the future, uncomment below and exclude incompatible assemblies:
+        <RunAOTCompilation>true</RunAOTCompilation>
+        <AndroidEnableProfiledAot>true</AndroidEnableProfiledAot>
+        -->
+    </PropertyGroup>
+
+    <!-- AndroidAotExclude doesn't work properly for these libraries, so AOT is disabled above
+    <ItemGroup Condition="'$(Configuration)'=='Release' and $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+        <AndroidAotExclude Include="Azure.Core" />
+        <AndroidAotExclude Include="Anthropic.SDK" />
+        <AndroidAotExclude Include="Microsoft.Extensions.AI" />
+        <AndroidAotExclude Include="System.Diagnostics.DiagnosticSource" />
+    </ItemGroup>
+    -->
+
     <ItemGroup>
-      <PackageReference Include="Refit" />
+        <PackageReference Include="Refit" />
+        <PackageReference Include="Refit.HttpClientFactory" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
     </ItemGroup>
 
 </Project>
